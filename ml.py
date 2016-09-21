@@ -35,7 +35,7 @@ def splitdata(data,splitratio):
 	test_x = data[mid:]
 	return train_x,test_x
 
-def summarizeddata(trainset,datasetcommand = ['Discrete','Discrete','Discrete','Continuous','Result','ID']):
+def summarizeddata(trainset,datasetcommand = ['Continuous','Discrete','Discrete','Continuous','Result','ID']):
 	
 	HashbyClass = {}
 	for data in trainset:
@@ -110,10 +110,9 @@ def predict(testset,summarizeddata,datasetcommand = ['Continuous','Discrete','Di
 					pass
 
 				elif datasetcommand[i] == 'Discrete':
-					if i not in summarizeddata[Class]:
+					if data[i] ==5:
 						pass
 					else:
-						print 'shitme'
 						probXgivenY *= float(summarizeddata[Class][i][data[i]])/summarizeddata[Class][i]['totalcount']
 				
 				elif datasetcommand[i] == 'Continuous':

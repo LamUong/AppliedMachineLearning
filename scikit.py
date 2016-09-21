@@ -12,11 +12,7 @@ y = []
 for data in wholedata:
 	x.append(data[:-1])
 	y.append(data[-1])
-
-
-
-
-
+print x[0]
 y_pred = gnb.fit(x, y).predict(x)
 a = 0
 b = 0
