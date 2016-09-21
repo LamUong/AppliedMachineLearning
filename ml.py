@@ -39,11 +39,11 @@ def summarizeddata(trainset,datasetcommand = ['Discrete','Discrete','Discrete','
 	
 	HashbyClass = {}
 	for data in trainset:
-		if data[-2] in HashbyClass:
-			HashbyClass[data[-2]].append(data)
+		if data[4] in HashbyClass:
+			HashbyClass[data[4]].append(data)
 		else:
-			HashbyClass[data[-2]] = []
-			HashbyClass[data[-2]].append(data)
+			HashbyClass[data[4]] = []
+			HashbyClass[data[4]].append(data)
 	
 	HashofClasses = {}
 	HashofClasses['ratio'] = {}
@@ -105,17 +105,19 @@ def predict(testset,summarizeddata,datasetcommand = ['Continuous','Discrete','Di
 			probY = summarizeddata['ratio'][Class]
 			probXgivenY = 1
 			for i in range(0,len(data),1):
+				
 				if datasetcommand[i] == 'ID' or datasetcommand[i] == 'Result':
 					pass
+
 				elif datasetcommand[i] == 'Discrete':
 					if i not in summarizeddata[Class]:
 						pass
 					else:
 						print 'shitme'
-
 						probXgivenY *= float(summarizeddata[Class][i][data[i]])/summarizeddata[Class][i]['totalcount']
+				
 				elif datasetcommand[i] == 'Continuous':
-					print data[i], summarizeddata[Class][i]['avg'], summarizeddata[Class][i]['stdev']
+					#print data[i], summarizeddata[Class][i]['avg'], summarizeddata[Class][i]['stdev']
 					#print calculateProbability(data[i], summarizeddata[Class][i]['avg'], summarizeddata[Class][i]['stdev'])
 					probXgivenY *= calculateProbability(data[i], summarizeddata[Class][i]['avg'], summarizeddata[Class][i]['stdev'])
 					
@@ -130,8 +132,7 @@ def predict(testset,summarizeddata,datasetcommand = ['Continuous','Discrete','Di
 			t+=1
 		else:
 			f+=1
-	print t 
-	print f
+	print float(t)/(f+t) 
 			
 
 a = load.loaddata()
@@ -139,9 +140,8 @@ a = load.loaddata()
 
 train,test = splitdata(a,0.67)
 
-summarizeddata = summarizeddata(train,datasetcommand = ['Continuous','Discrete','Discrete','Discrete','Result','ID'])
-
-predict(test,summarizeddata,datasetcommand = ['Continuous','Discrete','Discrete','Discrete','Result','ID'])
+summarizeddata = summarizeddata(train,datasetcommand = ['Continuous','Discrete','Discrete','Continuous','Result','ID'])
+predict(test,summarizeddata,datasetcommand = ['Continuous','Discrete','Discrete','Continuous','Result','ID'])
 
 '''
 data = loadCsv('data.csv')
