@@ -2,19 +2,7 @@ import load
 import numpy
 import math
 import csv
-'''
-	# of marathons, # Oasis events, Sex, Age, participate in 2015-09-20 Marathon(0 = n0, 1 = yes),index
-
-'''
-def loadCsv(filename):
-	lines = csv.reader(open(filename, "rb"))
-	dataset = list(lines)
-	for i in range(len(dataset)):
-		dataset[i] = [float(x) for x in dataset[i]]
-	return dataset
-
 def mean(List):
-
 	count = 0
 	sum = 0
 	for number in List:
@@ -35,24 +23,28 @@ def splitdata(data,splitratio):
 	test_x = data[mid:]
 	return train_x,test_x
 
-def summarizeddata(trainset,datasetcommand = ['Continuous','Discrete','Discrete','Continuous','Result','ID']):
+def summarizeddata(X_train,Y_train,datasetcommand):
 	
 	HashbyClass = {}
-	for data in trainset:
-		if data[4] in HashbyClass:
-			HashbyClass[data[4]].append(data)
+	for x,y in zip(X_train,Y_train):
+		if y in HashbyClass:
+			HashbyClass[y].append(x)
 		else:
-			HashbyClass[data[4]] = []
-			HashbyClass[data[4]].append(data)
+			HashbyClass[y] = []
+			HashbyClass[y].append(x)
 	
 	HashofClasses = {}
 	HashofClasses['ratio'] = {}
 
 	for Class in HashbyClass:
-		HashofClasses['ratio'][Class] = float(len(HashbyClass[Class]))/len(trainset)
+		HashofClasses['ratio'][Class] = float(len(HashbyClass[Class]))/len(X_train)
 
 	for Class in HashbyClass:
-		Listofattributes = [{},{},{},{}]
+
+		Listofattributes = []
+		for attr in X_train:
+			Listofattributes.append({}) 
+
 		for data in HashbyClass[Class]:
 			for i in range(0,len(data),1):
 				if datasetcommand[i] == 'ID' or datasetcommand[i] == 'Result':
@@ -81,10 +73,7 @@ def summarizeddata(trainset,datasetcommand = ['Continuous','Discrete','Discrete'
 				for category in attribute:
 					totalcount += attribute[category]
 				attribute['totalcount'] = totalcount
-
-
 		HashofClasses[Class] = Listofattributes
-
 
 	return HashofClasses
 
@@ -95,33 +84,29 @@ def calculateProbability(x, mean, stdev):
 		exponent = math.exp(-(math.pow(x-mean,2)/(2*math.pow(stdev,2))))
 		return (1 / (math.sqrt(2*math.pi) * stdev)) * exponent
 
-def predict(testset,summarizeddata,datasetcommand = ['Continuous','Discrete','Discrete','Continuous','Result','ID']):
+def predict(x_test,y_test,summarizeddata,datasetcommand):
 	t = 0
 	f = 0
-	for data in testset:
-		Validation = data[4]
+	for x, y in zip(x_test,y_test):
+		Validation = y
+
 		hashclasspredict = {}
+
 		for Class in summarizeddata['ratio']:
 			probY = summarizeddata['ratio'][Class]
 			probXgivenY = 1
-			for i in range(0,len(data),1):
-				
+
+			for i in range(0,len(x),1):
 				if datasetcommand[i] == 'ID' or datasetcommand[i] == 'Result':
 					pass
-
 				elif datasetcommand[i] == 'Discrete':
-					if data[i] ==5:
-						pass
-					else:
-						probXgivenY *= float(summarizeddata[Class][i][data[i]])/summarizeddata[Class][i]['totalcount']
-				
+					probXgivenY *= float(summarizeddata[Class][i][x[i]])/summarizeddata[Class][i]['totalcount']
 				elif datasetcommand[i] == 'Continuous':
-					#print data[i], summarizeddata[Class][i]['avg'], summarizeddata[Class][i]['stdev']
-					#print calculateProbability(data[i], summarizeddata[Class][i]['avg'], summarizeddata[Class][i]['stdev'])
-					probXgivenY *= calculateProbability(data[i], summarizeddata[Class][i]['avg'], summarizeddata[Class][i]['stdev'])
-					
+					probXgivenY *= calculateProbability(x[i], summarizeddata[Class][i]['avg'], summarizeddata[Class][i]['stdev'])	
+			
 			totalprob = probY* probXgivenY
 			hashclasspredict[Class] = totalprob
+
 		Prediction = 0
 		for Class in hashclasspredict:
 			if hashclasspredict[Class] > Prediction:
@@ -132,21 +117,64 @@ def predict(testset,summarizeddata,datasetcommand = ['Continuous','Discrete','Di
 		else:
 			f+=1
 	print float(t)/(f+t) 
-			
 
-a = load.loaddata()
+def loaddata(Listparameters):
+	with open('full_data.csv', 'rb') as mycsvfile:
+		thedata = csv.reader(mycsvfile)
+		x = []
+		y = []
+		z = []
+		count = 0
+
+		for row in thedata:
+			count += 1
+			if count <2:
+				for i in range(0,len(row),1):
+					z.append(row[i]) 
+			if count >=2:
+				data_row = []
+				for i in range(0,len(row),1):
+					if i == 280:
+						y.append(float(row[i]))
+					elif i in Listparameters:
+						data_row.append(float(row[i]))
+				x.append(data_row)
+		return x,y,z
+
+import csv
+Listparameters = []
+with open('NaieveBayes.csv') as csvfile:
+    readCSV = csv.reader(csvfile, delimiter=',')
+    for row in readCSV:
+    	Listparameters.append(row[1])
 
 
-train,test = splitdata(a,0.67)
 
-summarizeddata = summarizeddata(train,datasetcommand = ['Continuous','Discrete','Discrete','Continuous','Result','ID'])
-predict(test,summarizeddata,datasetcommand = ['Continuous','Discrete','Discrete','Continuous','Result','ID'])
+f = open("NaieveBayes.csv", "wt")
+c = csv.writer(f)
+for j in range(0,len(x[0]),1):
+	x_new = []
+	for i in range(0,len(x),1):
+		x_new.append(x[i][j:j+1])
+	value = learnandpredict(x_new,y)
+	print "Hola"
+	print z[j]
+	print value
+	if float(value)>0.5:
+		f.write(",".join([str(value),str(z[j])]))
+		f.write("\n")
+f.close()
 
-'''
-data = loadCsv('data.csv')
-train,test = splitdata(data,0.67)
-summarizeddata = summarizeddata(train,
-	datasetcommand = ['Continuous','Continuous','Continuous','Continuous','Continuous','Continuous','Continuous','Continuous','ID'])
-print summarizeddata['ratio']
-predict(test,summarizeddata,datasetcommand = ['Continuous','Continuous','Continuous','Continuous','Continuous','Continuous','Continuous','Continuous','ID'])
-'''
+x,y,z = loaddata(Listparameters)
+
+
+
+
+x_train = x[:6000]
+x_test = x[6000:]
+y_train = y[:6000]
+y_test = y[6000:]
+summarizeddata = summarizeddata(x_train,y_train,datasetcommand = ['Continuous','Discrete','Continuous','Continuous','Continuous','Continuous','Continuous'])
+
+predict(x_test,y_test,summarizeddata,datasetcommand = ['Continuous','Discrete','Continuous','Continuous','Continuous','Continuous','Continuous'])
+	# of marathons, #Oasisevents, RatioOasis/Allevents, Sex, Age, participate in 2015-09-20 Marathon(0 = n0, 1 = yes),ID

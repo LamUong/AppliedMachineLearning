@@ -32,9 +32,20 @@ def loaddata():
 					oasispos+=5	
 
 
-
-
 				bool = 0
+
+				NoOfEvents = 0
+				eventpos = 3
+
+				while eventpos <len(row):
+					NoOfEvents+=1
+					eventpos+=5
+
+				RatioNoOfOasisByAllEvents = float(Oasis)/NoOfEvents
+
+				towrite.append(Marathon)
+				towrite.append(Oasis)
+				towrite.append(RatioNoOfOasisByAllEvents)
 
 				eventdate = 1
 				pos = 3
@@ -47,18 +58,13 @@ def loaddata():
 					eventdate+=5
 
 
-
-				towrite.append(Marathon)
-				towrite.append(Oasis)
-
-
 				if len(row) <5: 
 					towrite.append(1)
-					towrite.append(20)
+					towrite.append(30)
 				elif len(row) >=6:
 					if row[5] == '':
 						towrite.append(1)
-						towrite.append(20)
+						towrite.append(40)
 
 					else:
 						if row[5][0] =='M':
@@ -67,6 +73,8 @@ def loaddata():
 							towrite.append(2)
 						else:
 							towrite.append(1)
+
+
 						numbers = row[5][1:].split("-")
 						if len(numbers) ==2:
 						
@@ -76,10 +84,12 @@ def loaddata():
 								mean = (int(a)+int(b))/2
 								towrite.append(mean)
 							else:	
-								towrite.append(20)
+								towrite.append(40)
 						else:
-							towrite.append(20)
+							towrite.append(40)
+
 				towrite.append(bool)
+				towrite.append(row[0])
 				Processeddata.append(towrite)
 			
 	return Processeddata
