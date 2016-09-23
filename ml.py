@@ -1,7 +1,31 @@
-import load
 import numpy
 import math
 import csv
+import load
+from collections import Counter
+def loaddata(Listparameters):
+	with open('full_data.csv', 'rb') as mycsvfile:
+		thedata = csv.reader(mycsvfile)
+		x = []
+		y = []
+		z = []
+		count = 0
+
+		for row in thedata:
+			count += 1
+			if count <2:
+				for i in range(0,len(row),1):
+					z.append(row[i]) 
+			if count >=2:
+				data_row = []
+				for i in range(0,len(row),1):
+					if z[i] == '2015-09-20':
+						y.append(float(row[i]))
+					elif z[i] in Listparameters:
+						data_row.append(float(row[i]))
+				x.append(data_row)
+		return x,y,z
+
 def mean(List):
 	count = 0
 	sum = 0
@@ -22,6 +46,13 @@ def splitdata(data,splitratio):
 	train_x = data[:mid]
 	test_x = data[mid:]
 	return train_x,test_x
+
+def calculateProbability(x, mean, stdev):
+	if isinstance(x, basestring):
+		return 1
+	else:
+		exponent = math.exp(-(math.pow(x-mean,2)/(2*math.pow(stdev,2))))
+		return (1 / (math.sqrt(2*math.pi) * stdev)) * exponent
 
 def summarizeddata(X_train,Y_train,datasetcommand):
 	
@@ -77,16 +108,11 @@ def summarizeddata(X_train,Y_train,datasetcommand):
 
 	return HashofClasses
 
-def calculateProbability(x, mean, stdev):
-	if isinstance(x, basestring):
-		return 1
-	else:
-		exponent = math.exp(-(math.pow(x-mean,2)/(2*math.pow(stdev,2))))
-		return (1 / (math.sqrt(2*math.pi) * stdev)) * exponent
-
 def predict(x_test,y_test,summarizeddata,datasetcommand):
 	t = 0
 	f = 0
+	ListofResults = []
+
 	for x, y in zip(x_test,y_test):
 		Validation = y
 
@@ -112,69 +138,77 @@ def predict(x_test,y_test,summarizeddata,datasetcommand):
 			if hashclasspredict[Class] > Prediction:
 				Prediction = hashclasspredict[Class]
 				Highestclass = Class
+		ListofResults.append(Highestclass)
 		if Validation == Highestclass:
 			t+=1
 		else:
 			f+=1
-	print float(t)/(f+t) 
+	return ListofResults, float(t)/(f+t) 
 
-def loaddata(Listparameters):
-	with open('full_data.csv', 'rb') as mycsvfile:
-		thedata = csv.reader(mycsvfile)
-		x = []
-		y = []
-		z = []
-		count = 0
+x,y,z = loaddata(['sex','age','n_oasis','marathon_ratio','2014-09-28','2013-09-22','2013-02-17'])
+Y_All = load.load_y()
 
-		for row in thedata:
-			count += 1
-			if count <2:
-				for i in range(0,len(row),1):
-					z.append(row[i]) 
-			if count >=2:
-				data_row = []
-				for i in range(0,len(row),1):
-					if i == 280:
-						y.append(float(row[i]))
-					elif i in Listparameters:
-						data_row.append(float(row[i]))
-				x.append(data_row)
-		return x,y,z
 
-import csv
-Listparameters = []
-with open('NaieveBayes.csv') as csvfile:
-    readCSV = csv.reader(csvfile, delimiter=',')
-    for row in readCSV:
-    	Listparameters.append(row[1])
+def K_fold_Cross_Validate(x,y,k=5):
+	Testsetsize = len(x)/k
+	splitBegin = 0
+	splitEnd = Testsetsize
+	while splitEnd <len(x):
+
+		x_test = x[splitBegin:splitEnd]
+		y_test = y[splitBegin:splitEnd]
+
+		x_train = x[:splitBegin] +x[splitEnd:]
+		y_train = y[:splitBegin] +y[splitEnd:]
+
+		Summary = summarizeddata(x_train,y_train,datasetcommand = ['Continuous','Continuous','Continuous','Continuous','Continuous','Continuous','Continuous'])
+		Result, Accuracy = predict(x_test,y_test,Summary,datasetcommand = ['Continuous','Continuous','Continuous','Continuous','Continuous','Continuous','Continuous'])
+		print Accuracy
+		splitEnd +=  Testsetsize
+		splitBegin +=  Testsetsize
 
 
 
-f = open("NaieveBayes.csv", "wt")
-c = csv.writer(f)
-for j in range(0,len(x[0]),1):
-	x_new = []
+def K_fold_Test_Each_Data(x,y,k=5):
+	f = open("Output.csv", "wt")
+	Testsetsize = len(x)/k
+	splitBegin = 0
+	splitEnd = Testsetsize
+	TrainerSummary = []
+	true = 0
+	false =0
+	while splitEnd <len(x):
+		x_train = x[:splitBegin] +x[splitEnd:]
+		y_train = y[:splitBegin] +y[splitEnd:]
+
+		Summary = summarizeddata(x_train,y_train,datasetcommand = ['Continuous','Continuous','Continuous','Continuous','Continuous','Continuous','Continuous'])
+		TrainerSummary.append(Summary)
+		splitEnd +=  Testsetsize
+		splitBegin +=  Testsetsize
+
 	for i in range(0,len(x),1):
-		x_new.append(x[i][j:j+1])
-	value = learnandpredict(x_new,y)
-	print "Hola"
-	print z[j]
-	print value
-	if float(value)>0.5:
-		f.write(",".join([str(value),str(z[j])]))
+		expected_y = y[i]
+
+		MeanOutput = []
+
+		x_test = [x[i]]
+		y_test = [y[i]]
+
+		for trainer in TrainerSummary:
+			Result, Accuracy = predict(x_test,y_test,trainer,datasetcommand = ['Continuous','Continuous','Continuous','Continuous','Continuous','Continuous','Continuous'])
+			MeanOutput.append(Result[0])
+			splitEnd +=  Testsetsize
+			splitBegin +=  Testsetsize
+
+		count = Counter(MeanOutput)
+		Result = count.most_common()[0][0]
+
+		if Result == expected_y:
+			true+=1
+		else:
+			false+=1
+		f.write(str(Result))
 		f.write("\n")
-f.close()
+	print "accuracy of " +str(k)+ " fold cross validation = "+str(float(true)/(true+false))
 
-x,y,z = loaddata(Listparameters)
-
-
-
-
-x_train = x[:6000]
-x_test = x[6000:]
-y_train = y[:6000]
-y_test = y[6000:]
-summarizeddata = summarizeddata(x_train,y_train,datasetcommand = ['Continuous','Discrete','Continuous','Continuous','Continuous','Continuous','Continuous'])
-
-predict(x_test,y_test,summarizeddata,datasetcommand = ['Continuous','Discrete','Continuous','Continuous','Continuous','Continuous','Continuous'])
-	# of marathons, #Oasisevents, RatioOasis/Allevents, Sex, Age, participate in 2015-09-20 Marathon(0 = n0, 1 = yes),ID
+K_fold_Cross_Validate(x,Y_All,k=5)

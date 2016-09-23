@@ -4,6 +4,8 @@ import re
 import sys
 from sklearn.linear_model import LogisticRegression
 from sklearn.naive_bayes import GaussianNB
+import load
+import sklearn
 def loaddata():
 	with open('full_data.csv', 'rb') as mycsvfile:
 		thedata = csv.reader(mycsvfile)
@@ -22,7 +24,7 @@ def loaddata():
 				for i in range(0,len(row),1):
 					if i == 280:
 						y.append(float(row[i]))
-					else  :
+					else:
 						data_row.append(float(row[i]))
 				x.append(data_row)
 		return x,y,z
@@ -35,35 +37,44 @@ def splitdata(data,splitratio):
 	test_x = data[mid:]
 	return train_x,test_x
 
-def learnandpredict(x,y):
-	a = GaussianNB()
-	Trained = a.fit(x, y)
-	predict = Trained.predict(x)
+def learnandpredict(x_train,y_train,x_test,y_test):
+	a = LogisticRegression()
+	Trained = a.fit(x_train, y_train)
+	predict = Trained.predict(x_test)
 
 	a=0
 	b=0
-	for i in range(0,len(y),1):
-		if y[i] == predict[i]:
+	for i in range(0,len(y_test),1):
+		if y_test[i] == predict[i]:
 			a+=1
 		else:
 			b+=1
 	return float(a)/(a+b)
 
-x,y,z = loaddata()
-print learnandpredict(x,y)
-
+	
 import csv
-f = open("NaieveBayes.csv", "wt")
-c = csv.writer(f)
-for j in range(0,len(x[0]),1):
-	x_new = []
-	for i in range(0,len(x),1):
-		x_new.append(x[i][j:j+1])
-	value = learnandpredict(x_new,y)
-	print "Hola"
-	print z[j]
-	print value
-	if float(value)>0.5:
-		f.write(",".join([str(value),str(z[j])]))
-		f.write("\n")
-f.close()
+
+
+x,y,z = loaddata()
+Y_All = load.load_y()
+
+def K_fold_Cross_Validate(x,y,k=5):
+	Testsetsize = len(x)/k
+	splitBegin = 0
+	splitEnd = Testsetsize
+	while splitEnd <len(x):
+
+		x_test = x[splitBegin:splitEnd]
+		y_test = y[splitBegin:splitEnd]
+
+		x_train = x[:splitBegin] +x[splitEnd:]
+		y_train = y[:splitBegin] +y[splitEnd:]
+
+		print learnandpredict(x_train,y_train,x_test,y_test)
+
+		splitEnd +=  Testsetsize
+		splitBegin +=  Testsetsize
+
+K_fold_Cross_Validate(x,Y_All,k=5)
+
+
