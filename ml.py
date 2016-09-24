@@ -1,14 +1,40 @@
 import numpy
 import math
 import csv
-import load
 from collections import Counter
-def loaddata(Listparameters):
+
+def load_y():
+	with open('Project1_data.csv', 'rb') as mycsvfile:
+		thedata = csv.reader(mycsvfile)
+		Processeddata = []
+		number = -2
+
+		for row in thedata:
+			number+=1
+			if number == -1:
+				pass
+			else:
+	
+				bool = 0
+
+				eventdate = 1
+				pos = 3
+				oasispos = 2
+				while pos <len(row) and oasispos <len(row):
+					if row[oasispos][:14] =='Marathon Oasis' and row[pos]== 'Marathon' and row[eventdate]== '2015-09-20':
+						bool = 1
+					oasispos+=5
+					pos+=5
+					eventdate+=5
+				Processeddata.append(bool)
+	return Processeddata
+
+def load_x(Listparameters):
 	with open('full_data.csv', 'rb') as mycsvfile:
 		thedata = csv.reader(mycsvfile)
 		x = []
 		y = []
-		z = []
+		z = [] # Column
 		count = 0
 
 		for row in thedata:
@@ -24,7 +50,7 @@ def loaddata(Listparameters):
 					elif z[i] in Listparameters:
 						data_row.append(float(row[i]))
 				x.append(data_row)
-		return x,y,z
+		return x
 
 def mean(List):
 	count = 0
@@ -145,14 +171,11 @@ def predict(x_test,y_test,summarizeddata,datasetcommand):
 			f+=1
 	return ListofResults, float(t)/(f+t) 
 
-x,y,z = loaddata(['sex','age','n_oasis','marathon_ratio','2014-09-28','2013-09-22','2013-02-17'])
-Y_All = load.load_y()
-
-
 def K_fold_Cross_Validate(x,y,k=5):
 	Testsetsize = len(x)/k
 	splitBegin = 0
 	splitEnd = Testsetsize
+	Acclist = []
 	while splitEnd <len(x):
 
 		x_test = x[splitBegin:splitEnd]
@@ -161,11 +184,12 @@ def K_fold_Cross_Validate(x,y,k=5):
 		x_train = x[:splitBegin] +x[splitEnd:]
 		y_train = y[:splitBegin] +y[splitEnd:]
 
-		Summary = summarizeddata(x_train,y_train,datasetcommand = ['Continuous','Continuous','Continuous','Continuous','Continuous','Continuous','Continuous'])
-		Result, Accuracy = predict(x_test,y_test,Summary,datasetcommand = ['Continuous','Continuous','Continuous','Continuous','Continuous','Continuous','Continuous'])
-		print Accuracy
+		Summary = summarizeddata(x_train,y_train,datasetcommand = ['Continuous','Discrete','Continuous','Continuous','Continuous','Continuous','Continuous'])
+		Result, Accuracy = predict(x_test,y_test,Summary,datasetcommand = ['Continuous','Discrete','Continuous','Continuous','Continuous','Continuous','Continuous'])
+		Acclist.append(Accuracy) 
 		splitEnd +=  Testsetsize
 		splitBegin +=  Testsetsize
+	print "when k = "+ str(k)+" cross validataion = "+ str(sum(Acclist) / float(len(Acclist)))
 
 
 
@@ -211,4 +235,15 @@ def K_fold_Test_Each_Data(x,y,k=5):
 		f.write("\n")
 	print "accuracy of " +str(k)+ " fold cross validation = "+str(float(true)/(true+false))
 
-K_fold_Cross_Validate(x,Y_All,k=5)
+
+def different_k_crossvalidation(List,X,Y):
+	for k in List:
+		print "when k = "+str(k)+" cross validation accuracy = :"
+		K_fold_Cross_Validate(X,Y,k)
+
+X = load_x(['marathon_ratio','sex','age','n_oasis','2014-09-28','2013-09-22','2013-02-17'])
+Y = load_y()
+
+
+K_fold_Test_Each_Data(X,Y,k=5)
+
